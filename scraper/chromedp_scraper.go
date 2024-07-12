@@ -21,44 +21,56 @@ func (s *ChromedpScraper) Scrape(url string) {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	var res string
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(url),
-		chromedp.OuterHTML("html", &res),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Function to extract links and follow pagination
+	var scrapePage func(string)
+	scrapePage = func(pageURL string) {
+		var res string
+		err := chromedp.Run(ctx,
+			chromedp.Navigate(pageURL),
+			chromedp.OuterHTML("html", &res),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	// Simulate extraction logic
-	// This is a simple example to show the extraction; you might need more complex parsing
-	lines := strings.Split(res, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "<a href=") {
-			// Extract the href and text content (very basic example)
-			linkStart := strings.Index(line, "href=\"") + 6
-			linkEnd := strings.Index(line[linkStart:], "\"") + linkStart
+		// Extract links
+		lines := strings.Split(res, "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "<a href=") {
+				linkStart := strings.Index(line, "href=\"") + 6
+				linkEnd := strings.Index(line[linkStart:], "\"") + linkStart
+				if linkStart < 6 || linkEnd < linkStart || linkEnd >= len(line) {
+					continue
+				}
+				link := line[linkStart:linkEnd]
 
-			// Check if indices are valid
-			if linkStart < 6 || linkEnd < linkStart || linkEnd >= len(line) {
-				continue
+				textStart := strings.Index(line, ">") + 1
+				textEnd := strings.Index(line[textStart:], "<") + textStart
+				if textStart < 1 || textEnd < textStart || textEnd >= len(line) {
+					continue
+				}
+				text := line[textStart:textEnd]
+
+				s.Data = append(s.Data, Data{Name: text, URL: link})
 			}
+		}
 
-			link := line[linkStart:linkEnd]
-
-			textStart := strings.Index(line, ">") + 1
-			textEnd := strings.Index(line[textStart:], "<") + textStart
-
-			// Check if indices are valid
-			if textStart < 1 || textEnd < textStart || textEnd >= len(line) {
-				continue
+		// Follow pagination
+		for _, line := range lines {
+			if strings.Contains(line, "class=\"next\"") {
+				nextPageStart := strings.Index(line, "href=\"") + 6
+				nextPageEnd := strings.Index(line[nextPageStart:], "\"") + nextPageStart
+				if nextPageStart < 6 || nextPageEnd < nextPageStart || nextPageEnd >= len(line) {
+					continue
+				}
+				nextPage := line[nextPageStart:nextPageEnd]
+				scrapePage(nextPage)
+				break
 			}
-
-			text := line[textStart:textEnd]
-
-			s.Data = append(s.Data, Data{Name: text, URL: link})
 		}
 	}
+
+	scrapePage(url)
 
 	fmt.Println(s.Data)
 }

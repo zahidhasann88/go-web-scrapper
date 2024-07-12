@@ -24,10 +24,17 @@ func NewScraper() *Scraper {
 func (s *Scraper) Scrape(url string) {
 	s.Data = []Data{}
 
+	// OnHTML callback to scrape data
 	s.Collector.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		link := e.Attr("href")
 		s.Data = append(s.Data, Data{Name: e.Text, URL: link})
 		fmt.Printf("Link found: %q -> %s\n", e.Text, link)
+	})
+
+	// OnHTML callback to handle pagination
+	s.Collector.OnHTML("a.next", func(e *colly.HTMLElement) {
+		nextPage := e.Attr("href")
+		e.Request.Visit(nextPage)
 	})
 
 	s.Collector.OnRequest(func(r *colly.Request) {
@@ -35,6 +42,7 @@ func (s *Scraper) Scrape(url string) {
 	})
 
 	s.Collector.Visit(url)
+	s.Collector.Wait()
 }
 
 func (s *Scraper) ExportData(format, filename string) error {
