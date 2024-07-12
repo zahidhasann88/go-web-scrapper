@@ -33,9 +33,8 @@ This project demonstrates a web scraping API using Golang with Gin and ChromeDP 
 - **Description:** Scrapes a website using ChromeDP or Colly based on the `useChromedp` flag.
 
 ### Example Request
-
+- **POST** - http://localhost:8080/scrape
 ```json
-POST http://localhost:8080/scrape
 
 {
     "url": "https://executivemachines.com",
@@ -43,7 +42,7 @@ POST http://localhost:8080/scrape
     "filename": "scraped_data.json",
     "useChromedp": true
 }
-
+```
 # Technologies Used
 
 This project utilizes the following technologies:
