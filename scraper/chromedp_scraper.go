@@ -64,14 +64,15 @@ func (s *ChromedpScraper) Scrape(url string) {
 					continue
 				}
 				nextPage := line[nextPageStart:nextPageEnd]
+				log.Printf("Following next page: %s\n", nextPage)
 				scrapePage(nextPage)
 				break
 			}
 		}
 	}
-
+	log.Printf("Starting scraping for URL: %s\n", url)
 	scrapePage(url)
-
+	log.Printf("Scraping completed. Extracted %d data entries.\n", len(s.Data))
 	fmt.Println(s.Data)
 }
 
